@@ -106,15 +106,63 @@ export async function POST(request: Request) {
       interactivePayload,
     });
 
-    // Find-or-create the conversation for this phone, then send. Both
-    // steps share `SendMessageError`, so one catch maps the whole
-    // pipeline to the envelope.
+    const senderType =
+      body.sender_type === 'customer' || body.direction === 'inbound'
+        ? 'customer'
+        : 'agent';
+
+    // Find-or-create the conversation for this phone. Both paths share
+    // `resolveConversationByPhone`.
     const resolved = await resolveConversationByPhone(
       ctx.supabase,
       ctx.accountId,
       to,
       typeof body.name === 'string' ? body.name : null
     );
+
+    if (senderType === 'customer') {
+      // Inbound / Customer message (e.g. from Web Chatbot or external integration).
+      // Persist directly to DB as 'customer' (renders on the left as incoming)
+      // without trying to send via Meta API.
+      const { data: messageRecord, error: msgError } = await ctx.supabase
+        .from('messages')
+        .insert({
+          conversation_id: resolved.conversationId,
+          sender_type: 'customer',
+          content_type: type,
+          content_text: contentText,
+          media_url: typeof body.media_url === 'string' ? body.media_url : null,
+          status: 'delivered',
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (msgError) {
+        return fail('db_error', `Failed to save message: ${msgError.message}`, 500);
+      }
+
+      await ctx.supabase
+        .from('conversations')
+        .update({
+          last_message_text: contentText || `[${type}]`,
+          last_message_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', resolved.conversationId);
+
+      return ok(
+        {
+          message_id: messageRecord.id,
+          whatsapp_message_id: null,
+          conversation_id: resolved.conversationId,
+          contact_id: resolved.contactId,
+          contact_created: resolved.contactCreated,
+          sender_type: 'customer',
+        },
+        201
+      );
+    }
 
     const result = await sendMessageToConversation(
       ctx.supabase,
@@ -145,6 +193,7 @@ export async function POST(request: Request) {
         conversation_id: resolved.conversationId,
         contact_id: resolved.contactId,
         contact_created: resolved.contactCreated,
+        sender_type: 'agent',
       },
       201
     );
