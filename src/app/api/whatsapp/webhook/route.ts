@@ -820,6 +820,12 @@ async function processMessage(
   await dispatchWebhookEvent(supabaseAdmin(), accountId, 'message.received', {
     conversation_id: conversation.id,
     contact_id: contactRecord.id,
+    from: contactRecord.phone,
+    contact: {
+      id: contactRecord.id,
+      name: contactRecord.name,
+      phone: contactRecord.phone,
+    },
     whatsapp_message_id: message.id,
     content_type: contentType,
     text: contentText,
