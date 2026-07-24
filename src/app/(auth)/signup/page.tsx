@@ -130,15 +130,15 @@ function SignupPageInner() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border bg-card">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden">
+        <CardHeader className="items-center text-center pt-8 pb-4">
+          <div className="mb-4 flex items-center justify-center">
             {inviteToken ? (
-              <UsersRound className="h-6 w-6 text-primary" />
+              <UsersRound className="h-10 w-10 text-primary" />
             ) : (
-              <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+              <img src="/logo-main.png" alt="Logo" className="h-16 max-w-[220px] w-auto object-contain" />
             )}
           </div>
-          <CardTitle className="text-xl text-foreground">
+          <CardTitle className="text-2xl font-bold text-foreground">
             {inviteToken ? "Create account & join" : "Create account"}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
