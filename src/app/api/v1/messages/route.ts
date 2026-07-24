@@ -87,9 +87,20 @@ export async function POST(request: Request) {
         ? (body.interactive_payload as InteractiveMessagePayload)
         : null;
 
+    let contentText: string | null = null;
+    if (typeof body.text === 'string') {
+      contentText = body.text;
+    } else if (
+      body.text &&
+      typeof body.text === 'object' &&
+      typeof (body.text as Record<string, unknown>).body === 'string'
+    ) {
+      contentText = (body.text as Record<string, unknown>).body as string;
+    }
+
     validateSendMessageParams({
       messageType: type,
-      contentText: typeof body.text === 'string' ? body.text : null,
+      contentText,
       mediaUrl: typeof body.media_url === 'string' ? body.media_url : null,
       templateName: typeof template?.name === 'string' ? template.name : null,
       interactivePayload,
@@ -111,7 +122,7 @@ export async function POST(request: Request) {
       {
         conversationId: resolved.conversationId,
         messageType: type,
-        contentText: typeof body.text === 'string' ? body.text : null,
+        contentText,
         mediaUrl: typeof body.media_url === 'string' ? body.media_url : null,
         filename: typeof body.filename === 'string' ? body.filename : null,
         templateName: typeof template?.name === 'string' ? template.name : null,
